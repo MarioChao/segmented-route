@@ -1,0 +1,17 @@
+{
+  "name": "route-segment",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$path": "src/ReplicatedStorage",
+      "$ignoreUnknownInstances": true
+    },
+
+    "Workspace": {
+      "$path": "src/Workspace",
+      "$ignoreUnknownInstances": true
+    }
+  },
+  "globIgnorePaths": ["**/wally.toml"]
+}

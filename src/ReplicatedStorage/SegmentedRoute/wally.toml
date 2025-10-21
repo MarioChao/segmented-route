@@ -1,0 +1,13 @@
+[package]
+name = "mariochao/segmented-route"
+description = "Create segments (linear / Bezier curves) and connect them into paths (routes / splines).
+The package includes four parts: ControlPoint, RouteSegment, LinkedRoute, and RouteUtil."
+
+version = "0.0.0"
+license = "MIT"
+authors = ["Mario Chao"]
+realm = "shared"
+registry = "https://github.com/UpliftGames/wally-index"
+repository = "https://github.com/MarioChao/segmented-route"
+
+[dependencies]

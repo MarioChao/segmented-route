@@ -1,0 +1,65 @@
+{
+    "className": "Folder",
+    "children": [
+        {
+            "className": "Part",
+            "name": "ControlPoint1",
+            "properties": {
+                "Color": [0.666667, 0, 0.666667],
+                "Material": "Neon",
+                "Transparency": 0.6,
+                "Size": [2, 2, 2],
+                "Position": [-10, 5 ,-10],
+                "Anchored": true
+            }
+        },
+        {
+            "className": "Part",
+            "name": "ControlPoint2",
+            "properties": {
+                "Color": [0.666667, 0, 0.666667],
+                "Material": "Neon",
+                "Transparency": 0.6,
+                "Size": [2, 2, 2],
+                "Position": [-10, 5 ,10],
+                "Anchored": true
+            }
+        },
+        {
+            "className": "Part",
+            "name": "ControlPoint3",
+            "properties": {
+                "Color": [0.666667, 0, 0.666667],
+                "Material": "Neon",
+                "Transparency": 0.6,
+                "Size": [2, 2, 2],
+                "Position": [10, 5 ,10],
+                "Anchored": true
+            }
+        },
+        {
+            "className": "Part",
+            "name": "ControlPoint4",
+            "properties": {
+                "Color": [0.666667, 0, 0.666667],
+                "Material": "Neon",
+                "Transparency": 0.6,
+                "Size": [2, 2, 2],
+                "Position": [10, 5, -10],
+                "Anchored": true
+            }
+        },
+        {
+            "className": "Part",
+            "name": "ControlPoint5",
+            "properties": {
+                "Color": [0.666667, 0, 0.666667],
+                "Material": "Neon",
+                "Transparency": 0.6,
+                "Size": [2, 2, 2],
+                "Position": [0, 15, 0],
+                "Anchored": true
+            }
+        }
+    ]
+}
