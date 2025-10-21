@@ -1,7 +1,7 @@
 [package]
 name = "mariochao/segmented-route"
-description = "Create segments (linear / Bezier curves) and connect them into paths (routes / splines).
-The package includes four parts: ControlPoint, RouteSegment, LinkedRoute, and RouteUtil."
+description = """Create segments (linear / Bezier curves) and connect them into paths (routes / splines).
+The package includes four parts: ControlPoint, RouteSegment, LinkedRoute, and RouteUtil."""
 
 version = "0.0.0"
 license = "MIT"
