@@ -36,14 +36,15 @@ If the route is modified after the function is called, destroy the returned <cod
 
 @return ((number, boolean) -> number) The reparameterization function to convert between alpha and distance.
 @return (Instance) The <code>Folder</code> containing the created parts.
+@return ({Part}) A table containing the created parts in sequential order.
 ]]
 
-function RouteUtil.createParts_equalDistanceSteps(linkedRoute: LinkedRoute.ClassType, defaultPart: BasePart, colorRange: RouteVisualizer.ColorRange?, deltaDistance: number)
+function RouteUtil.createParts_equalDistanceSteps(linkedRoute: LinkedRoute.ClassType, defaultPart: BasePart, autoResizePartLength: boolean, colorRange: RouteVisualizer.ColorRange?, deltaDistance: number)
     local reparameterization_function = RouteReparam.getRoute_reparameterization_function(linkedRoute)
-    local partFolder = RouteVisualizer.createParts_equalSteps(linkedRoute, defaultPart, colorRange, 0, deltaDistance, function(parameter: number)
+    local partFolder, createdParts = RouteVisualizer.createParts_equalSteps(linkedRoute, defaultPart, autoResizePartLength, colorRange, 0, deltaDistance, function(parameter: number)
         return reparameterization_function(parameter, true)
     end)
-    return reparameterization_function, partFolder
+    return reparameterization_function, partFolder, createdParts
 end
 
 

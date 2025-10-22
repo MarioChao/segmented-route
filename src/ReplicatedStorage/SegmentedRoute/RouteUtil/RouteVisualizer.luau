@@ -52,9 +52,11 @@ Creates parts at equal parameter steps on the route. An additional part will be 
 If the route is modified after the function is called, destroy the returned <code>Folder</code> and call this function again to update the visualized route.
 
 @return (Instance) The <code>Folder</code> containing the created parts.
+@return ({Part}) A table containing the created parts in sequential order.
 ]]
-function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassType, defaultPart: BasePart, colorRange: ColorRange?, zeroAlphaParameter: number, deltaParameter: number, parameterToAlpha_function: ((parameter: number) -> number)?)
+function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassType, defaultPart: BasePart, autoResizePartLength: boolean, colorRange: ColorRange?, zeroAlphaParameter: number, deltaParameter: number, parameterToAlpha_function: ((parameter: number) -> number)?)
     local partsFolder
+    local createdParts = {}
     local createdPartCount
     local alphaRange = linkedRoute:getAlphaRange()
     local alphaRange_scalar = linkedRoute:getAlphaRange_scalar()
@@ -70,11 +72,11 @@ function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassTy
     repeat
         -- Create part at alpha
         newPart = defaultPart:Clone()
+        table.insert(createdParts, newPart)
         createdPartCount += 1
         colorizePart(newPart, colorRange, (alpha - alphaRange.Min) / alphaRange_scalar)
         newPart.CFrame = linkedRoute:getCFrameAtAlpha(alpha)
         newPart.Name = string.format("%5d", createdPartCount)
-        newPart.Parent = partsFolder
 
         -- Get next alpha
         parameter += deltaParameter
@@ -86,15 +88,53 @@ function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassTy
         -- Create part at alpha
         alpha = alphaRange.Max
         newPart = defaultPart:Clone()
+        table.insert(createdParts, newPart)
         createdPartCount += 1
         colorizePart(newPart, colorRange, (alpha - alphaRange.Min) / alphaRange_scalar)
         newPart.CFrame = linkedRoute:getCFrameAtAlpha(alpha)
         newPart.Name = string.format("%.3f", alpha)
-        newPart.Parent = partsFolder
+    end
+
+    -- Resize parts for connection
+    if autoResizePartLength then
+        local currentPart
+        local nextPart
+        local partPositionDifferenceVector
+        local partDistance
+        local partMidPosition
+        local lastPart
+
+        -- Resize each part
+        nextPart = createdParts[1]
+        for partIndex = 1, createdPartCount - 1 do
+            currentPart = nextPart
+            nextPart = createdParts[partIndex + 1]
+
+            -- Get info
+            partPositionDifferenceVector = nextPart.Position - currentPart.Position
+            partDistance = partPositionDifferenceVector.Magnitude
+            partMidPosition = currentPart.Position + partPositionDifferenceVector / 2
+
+            -- Modify part
+            currentPart.Size = Vector3.new(currentPart.Size.X, currentPart.Size.Y, partDistance)
+            currentPart.CFrame = CFrame.lookAlong(partMidPosition, partPositionDifferenceVector)
+        end
+
+        -- Remove last part
+        lastPart = table.remove(createdParts)
+        if lastPart then
+            createdPartCount -= 1
+            lastPart:Destroy()
+        end
+    end
+
+    -- Parent parts to folder
+    for _, part in createdParts do
+        part.Parent = partsFolder
     end
     partsFolder.Parent = RouteVisualizer.visualizerInstancesFolder
 
-    return partsFolder
+    return partsFolder, createdParts
 end
 
 

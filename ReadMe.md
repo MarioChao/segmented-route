@@ -8,6 +8,13 @@ Segmented Route is a package of 4 parts:
 - `LinkedRoute`: a class for connecting segments ones after another
 - `RouteUtil`: utility modules with extra functionalities like reparameterization and route visualization
 
+## Example images
+
+Some of the things you can do with SegmentedRoute!
+
+| Equal alpha | Reparameterized by distance | With `autoResizePartLength` |
+|:---:|:---:|:---:|
+| ![Bezier curve route with dots at equal alpha](assets/images/visual-delta-alpha.png) | ![With dots at equal distance](assets/images/visual-reparameterized.png) | ![Parts connected at the dots in the previous image](assets/images/visual-connected.png) |
 
 ## Object-Oriented Programming (OOP) Design
 

@@ -4,8 +4,14 @@
     "$className": "DataModel",
 
     "ReplicatedStorage": {
-      "$path": "src/ReplicatedStorage",
-      "$ignoreUnknownInstances": true
+      "Modules": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+
+        "SegmentedRoute": {
+          "$path": "src/ReplicatedStorage/SegmentedRoute"
+        }
+      }
     },
 
     "Workspace": {

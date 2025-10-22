@@ -8,19 +8,21 @@ local RunService = game:GetService("RunService")
 
 ---------- Imports ----------
 
-local LinkedRoute = require(ReplicatedStorage.SegmentedRoute.LinkedRoute)
-local RouteSegment = require(ReplicatedStorage.SegmentedRoute.RouteSegment)
-local RouteUtil = require(ReplicatedStorage.SegmentedRoute.RouteUtil)
+local Modules = ReplicatedStorage.Modules
+local SegmentedRoute = require(Modules.SegmentedRoute)
+local LinkedRoute = SegmentedRoute.LinkedRoute
+local RouteSegment = SegmentedRoute.RouteSegment
+local RouteUtil = SegmentedRoute.RouteUtil
 
 
 ---------- Test functions ----------
 
+----- Route segments -----
+
 local testBezierCurveDerivatives
 local testBezierCurve
-local travelAlongLinkedRoute
-local testLinkedRoute
 
-testBezierCurveDerivatives = function(bezierCurve: RouteSegment.BezierCurve)
+testBezierCurveDerivatives = function(bezierCurve: SegmentedRoute.BezierCurve)
     local bezierCurve_firstDerivative
     local bezierCurve_secondDerivative
     local bezierCurve_thirdDerivative
@@ -91,7 +93,14 @@ testBezierCurve = function()
     testBezierCurveDerivatives(bezierCurve)
 end
 
-travelAlongLinkedRoute = function(linkedRoute: LinkedRoute.ClassType, part: BasePart, speed: number)
+
+----- Route util -----
+
+local travelAlongLinkedRoute
+local visualizeDynamicRoute
+local testLinkedRoute
+
+travelAlongLinkedRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, defaultPart: BasePart, speed: number)
     local routeStartTime = time()
     local routeElapsedTime
     local traversedDistance
@@ -100,8 +109,9 @@ travelAlongLinkedRoute = function(linkedRoute: LinkedRoute.ClassType, part: Base
     local reparameterization_function
     local routeLength
     local targetCFrame
+    local newDefaultPart = defaultPart:Clone()
+    newDefaultPart.Parent = workspace
     table.sort(daTable, function(a, b) return a.distance < b.distance end)
-    print(`Route length: {routeLength} studs`)
     print(daTable)
     while true do
         -- Reparameterize
@@ -114,8 +124,42 @@ travelAlongLinkedRoute = function(linkedRoute: LinkedRoute.ClassType, part: Base
         routeAlpha = reparameterization_function(traversedDistance, true)
         -- Set part CFrame
         targetCFrame = linkedRoute:getCFrameAtAlpha(routeAlpha)
-        part.CFrame = targetCFrame
+        newDefaultPart.CFrame = targetCFrame
         RunService.Heartbeat:Wait()
+    end
+end
+
+visualizeDynamicRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, useAlpha: boolean, defaultPart: BasePart, autoResizePartLength: boolean, colorRange: {Color3}, partCountLimit: number, minDeltaParameter: number)
+    local reparameterization_function
+    local partsFolder: Folder
+    local oldPartsFolder: Folder
+    local routeLength
+    local alphaRange
+    local partCountDeltaParameter
+    local deltaParameter
+    local newDefaultPart = defaultPart:Clone()
+    while true do
+        if useAlpha then
+            -- Use alpha
+            alphaRange = linkedRoute:getAlphaRange()
+            partCountDeltaParameter = (alphaRange.Max - alphaRange.Min) / partCountLimit
+            deltaParameter = math.max(minDeltaParameter, partCountDeltaParameter)
+            partsFolder = RouteUtil.Visualizer.createParts_equalSteps(linkedRoute, newDefaultPart, autoResizePartLength, colorRange, alphaRange.Min, deltaParameter)
+        else
+            -- Use distance
+            reparameterization_function = RouteUtil.Reparam.getRoute_reparameterization_function(linkedRoute)
+            routeLength = reparameterization_function(linkedRoute:getAlphaRange().Max, false)
+            partCountDeltaParameter = routeLength / partCountLimit
+            deltaParameter = math.max(minDeltaParameter, partCountDeltaParameter)
+            newDefaultPart.Size = Vector3.new(0.2, 0.2, deltaParameter * 0.4)
+            reparameterization_function, partsFolder = RouteUtil.createParts_equalDistanceSteps(linkedRoute, newDefaultPart, autoResizePartLength, colorRange, deltaParameter)
+        end
+        RunService.Heartbeat:Wait()
+        if oldPartsFolder then
+            print(#oldPartsFolder:GetChildren())
+            oldPartsFolder:Destroy()
+        end
+        oldPartsFolder = partsFolder
     end
 end
 
@@ -147,41 +191,22 @@ testLinkedRoute = function()
     bulletPart.Color = BrickColor.new("Pink").Color
     bulletPart.Transparency = 0.6
     bulletPart.Anchored = true
-    bulletPart.Parent = workspace
-    task.defer(travelAlongLinkedRoute, linkedRoute, bulletPart, 32)
+    -- task.defer(travelAlongLinkedRoute, linkedRoute, bulletPart, 32)
+    -- task.defer(travelAlongLinkedRoute, linkedRoute, bulletPart, 8)
     colorRange1 = {BrickColor.new("Royal purple").Color, BrickColor.new("Pastel Blue").Color}
     colorRange2 = {BrickColor.new("Royal blue").Color, BrickColor.new("Medium blue").Color}
     visualizerPart = Instance.new("Part")
-    visualizerPart.Size = Vector3.new(0.2, 0.2, 0.5)
     visualizerPart.Material = Enum.Material.Neon
-    visualizerPart.Transparency = 0.6
+    -- visualizerPart.Transparency = 0.6
+    visualizerPart.Locked = true
+    visualizerPart.Size = Vector3.new(0.2, 0.2, 0.5)
     visualizerPart.Anchored = true
     -- visualizerPart.Size = Vector3.one * 0.5
     -- visualizerPart.Shape = Enum.PartType.Ball
     -- RouteUtil.Visualizer.createParts_equalSteps(linkedRoute, visualizerPart, colorRange1, 0, 0.03)
-    task.defer(function()
-        local reparameterization_function
-        local partsFolder: Folder
-        local oldPartsFolder: Folder
-        local routeLength
-        local partsLimit = 2000
-        local minDeltaDistance
-        local deltaDistance
-        while true do
-            reparameterization_function = RouteUtil.Reparam.getRoute_reparameterization_function(linkedRoute)
-            routeLength = reparameterization_function(linkedRoute:getAlphaRange().Max, false)
-            minDeltaDistance = routeLength / partsLimit
-            deltaDistance = math.max(1, minDeltaDistance)
-            visualizerPart.Size = Vector3.new(0.2, 0.2, deltaDistance * 0.5)
-            reparameterization_function, partsFolder = RouteUtil.createParts_equalDistanceSteps(linkedRoute, visualizerPart, colorRange2, deltaDistance)
-            RunService.Heartbeat:Wait()
-            if oldPartsFolder then
-                print(#oldPartsFolder:GetChildren())
-                oldPartsFolder:Destroy()
-            end
-            oldPartsFolder = partsFolder
-        end
-    end)
+    task.defer(visualizeDynamicRoute, linkedRoute, true, visualizerPart, false, colorRange1, 2000, 0.025)
+    -- RouteUtil.createParts_equalDistanceSteps(linkedRoute, visualizerPart, colorRange2, 1)
+    -- task.defer(visualizeDynamicRoute, linkedRoute, false, visualizerPart, false, colorRange2, 2000, 1)
 end
 
 
