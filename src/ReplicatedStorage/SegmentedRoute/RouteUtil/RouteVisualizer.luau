@@ -13,6 +13,29 @@ local LinkedRoute = require(script.Parent.Parent.LinkedRoute)
 
 export type ColorRange = {Color3}
 
+export type PartVisualizerInfo_Input = {
+    templatePart: BasePart?,
+    colorRange: ColorRange?,
+}?
+
+type PartVisualizerInfo = {
+    templatePart: BasePart,
+    colorRange: ColorRange,
+}
+
+
+---------- Constants ----------
+
+local Constants = {}
+
+Constants.defaultTemplatePart = Instance.new("Part")
+Constants.defaultTemplatePart.Material = Enum.Material.Neon
+Constants.defaultTemplatePart.Locked = true
+Constants.defaultTemplatePart.Size = Vector3.new(0.2, 0.2, 0.5)
+Constants.defaultTemplatePart.Anchored = true
+
+Constants.defaultColorRange = {BrickColor.new("Royal blue").Color, BrickColor.new("Medium blue").Color}
+
 
 ---------- Local functions ----------
 
@@ -28,6 +51,17 @@ colorizePart = function(part: BasePart, colorRange: ColorRange?, alpha: number)
             part.Color = colorRange[1]:Lerp(colorRange[2], alpha)
         end
     end
+end
+
+----- Visualizer info functions -----
+
+local getPartVisualizerInfo
+
+getPartVisualizerInfo = function(visualizerInfo: PartVisualizerInfo_Input): PartVisualizerInfo
+    local result = {} :: PartVisualizerInfo
+    result.templatePart = visualizerInfo and visualizerInfo.templatePart or Constants.defaultTemplatePart
+    result.colorRange = visualizerInfo and visualizerInfo.colorRange or Constants.defaultColorRange
+    return result
 end
 
 
@@ -52,9 +86,10 @@ Creates parts at equal parameter steps on the route. An additional part will be 
 If the route is modified after the function is called, destroy the returned <code>Folder</code> and call this function again to update the visualized route.
 
 @return (Instance) The <code>Folder</code> containing the created parts.
-@return ({Part}) A table containing the created parts in sequential order.
+@return ({BasePart}) A table containing the created parts in sequential order.
 ]]
-function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassType, defaultPart: BasePart, autoResizePartLength: boolean, colorRange: ColorRange?, zeroAlphaParameter: number, deltaParameter: number, parameterToAlpha_function: ((parameter: number) -> number)?)
+function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassType, visualizerInfo_input: PartVisualizerInfo_Input, autoResizePartLength: boolean, zeroAlphaParameter: number, deltaParameter: number, parameterToAlpha_function: ((parameter: number) -> number)?)
+    local visualizerInfo = getPartVisualizerInfo(visualizerInfo_input)
     local partsFolder
     local createdParts = {}
     local createdPartCount
@@ -64,6 +99,7 @@ function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassTy
     local alpha
     local newPart
 
+    -- Create parts
     partsFolder = Instance.new("Folder")
     partsFolder.Name = "PartsFolder"
     createdPartCount = 0
@@ -71,10 +107,10 @@ function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassTy
     alpha = parameterToAlpha_function and parameterToAlpha_function(parameter) or parameter
     repeat
         -- Create part at alpha
-        newPart = defaultPart:Clone()
+        newPart = visualizerInfo.templatePart:Clone()
         table.insert(createdParts, newPart)
         createdPartCount += 1
-        colorizePart(newPart, colorRange, (alpha - alphaRange.Min) / alphaRange_scalar)
+        colorizePart(newPart, visualizerInfo.colorRange, (alpha - alphaRange.Min) / alphaRange_scalar)
         newPart.CFrame = linkedRoute:getCFrameAtAlpha(alpha)
         newPart.Name = string.format("%5d", createdPartCount)
 
@@ -87,12 +123,12 @@ function RouteVisualizer.createParts_equalSteps(linkedRoute: LinkedRoute.ClassTy
     do
         -- Create part at alpha
         alpha = alphaRange.Max
-        newPart = defaultPart:Clone()
+        newPart = visualizerInfo.templatePart:Clone()
         table.insert(createdParts, newPart)
         createdPartCount += 1
-        colorizePart(newPart, colorRange, (alpha - alphaRange.Min) / alphaRange_scalar)
+        colorizePart(newPart, visualizerInfo.colorRange, (alpha - alphaRange.Min) / alphaRange_scalar)
         newPart.CFrame = linkedRoute:getCFrameAtAlpha(alpha)
-        newPart.Name = string.format("%.3f", alpha)
+        newPart.Name = string.format("%5d", createdPartCount)
     end
 
     -- Resize parts for connection
@@ -140,4 +176,5 @@ end
 
 ---------- Return module ----------
 
+table.freeze(RouteVisualizer)
 return RouteVisualizer

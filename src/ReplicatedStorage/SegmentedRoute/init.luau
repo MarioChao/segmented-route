@@ -21,6 +21,9 @@ export type BezierCurve = RouteSegment.BezierCurve
 
 export type LinkedRoute = LinkedRoute.ClassType
 
+export type ColorRange = RouteUtil.ColorRange
+export type PartVisualizerInfo_Input = RouteUtil.PartVisualizerInfo_Input
+
 
 ---------- Module ----------
 
@@ -37,4 +40,5 @@ SegmentedRoute.RouteUtil = RouteUtil
 
 ---------- Return module ----------
 
+table.freeze(SegmentedRoute)
 return SegmentedRoute

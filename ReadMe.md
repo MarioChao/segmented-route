@@ -14,7 +14,12 @@ Some of the things you can do with SegmentedRoute!
 
 | Equal alpha | Reparameterized by distance | With `autoResizePartLength` |
 |:---:|:---:|:---:|
-| ![Bezier curve route with dots at equal alpha](assets/images/visual-delta-alpha.png) | ![With dots at equal distance](assets/images/visual-reparameterized.png) | ![Parts connected at the dots in the previous image](assets/images/visual-connected.png) |
+| ![Bezier curve route with dots at equal alpha](assets/images/visual-delta-alpha.png) | ![With dots at equal distance](assets/images/visual-reparameterized.png) | ![Parts connected at the dots in the previous image](assets/images/visual-connected-dots.png) |
+
+| Connected with C1 continuity `BezierConnectionCurve` |
+|:---:|
+| ![](assets/images/visual-connection-curves.gif) |
+
 
 ## Object-Oriented Programming (OOP) Design
 

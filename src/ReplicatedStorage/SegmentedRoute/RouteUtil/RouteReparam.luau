@@ -167,10 +167,10 @@ function RouteReparam.getRouteDistanceAtAlpha(linkedRoute: LinkedRoute.ClassType
     segmentIndex, segmentAlpha = linkedRoute:getSegmentAtAlpha(routeAlpha)
     for index = 1, segmentIndex - 1 do
         segment = linkedRoute:getSegmentByIndex(index)
-        result += RouteReparam.getSegmentDistanceAtAlpha(segment, segment:getAlphaRange().Max)
+        result += segment and RouteReparam.getSegmentDistanceAtAlpha(segment, segment:getAlphaRange().Max) or 0
     end
     segment = linkedRoute:getSegmentByIndex(segmentIndex)
-    result += RouteReparam.getSegmentDistanceAtAlpha(segment, segmentAlpha)
+    result += segment and RouteReparam.getSegmentDistanceAtAlpha(segment, segmentAlpha) or 0
     return result
 end
 
@@ -178,13 +178,12 @@ end
 Gets a <code>table</code> of distance-alpha value pairs used to reparameterize the route.<br>
 If the route is modified after the function is called, call this function again to get a new <code>table</code>.
 ]]
-function RouteReparam.getRoute_distanceAlphaTable(linkedRoute: LinkedRoute.ClassType, willSort: boolean?): {DistanceAlphaPair}
+function RouteReparam.getRoute_distanceAlphaTable(linkedRoute: LinkedRoute.ClassType): {DistanceAlphaPair}
     local alphaRange = linkedRoute:getAlphaRange()
     local distanceAlphaTable = {}
     getRoute_distanceAlphaTable_recursion(distanceAlphaTable, linkedRoute, alphaRange.Min, alphaRange.Max, 0, RouteReparam.recursionEndSettings)
-    if willSort then
-        table.sort(distanceAlphaTable, function(a, b) return a.distance < b.distance end)
-    end
+    -- The calculated table should be sorted by default
+    -- table.sort(distanceAlphaTable, function(a, b) return a.alpha < b.alpha end)
     return distanceAlphaTable
 end
 
@@ -193,8 +192,8 @@ Gets an estimated <code>function</code> that converts distance from the start of
 If the route is modified after the function is called, call this function again to estimate a new <code>function</code>.<br>
 The estimated <code>function</code> performs a binary search on the distance-alpha <code>table</code> then linearly interpolates between the two closest values.
 ]]
-function RouteReparam.getRoute_reparameterization_function(linkedRoute: LinkedRoute.ClassType): (parameter: number, inputIsDistance: boolean) -> number
-    local daTable = RouteReparam.getRoute_distanceAlphaTable(linkedRoute, true)
+function RouteReparam.getRoute_reparameterization_function(linkedRoute: LinkedRoute.ClassType): (parameter: number, inputIsDistance: boolean, willClampParameter: boolean?) -> number
+    local daTable = RouteReparam.getRoute_distanceAlphaTable(linkedRoute)
     local reparameterization_function
 
     reparameterization_function = function(parameter: number, inputIsDistance: boolean)
@@ -223,4 +222,5 @@ end
 
 ---------- Return module ----------
 
+table.freeze(RouteReparam)
 return RouteReparam

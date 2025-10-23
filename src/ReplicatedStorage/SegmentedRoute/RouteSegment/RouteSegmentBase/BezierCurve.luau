@@ -36,6 +36,36 @@ function BezierCurve.new(): ClassType
 end
 
 
+----- Static functions -----
+
+--[[
+Evaluates a bezier curve at the given alpha using De Casteljau's algorithm.
+https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
+]]
+function BezierCurve._evaluateDeCasteljau(alpha: number, controlPointPositions: {Vector3}): Vector3
+	local newControlPointPositions = {}
+	local position1
+	local position2
+	local result
+
+	if #controlPointPositions == 0 then
+		warn(`[BezierCurve]: deCasteljau received empty control point positions!`)
+	elseif #controlPointPositions == 1 then
+		result = controlPointPositions[1]
+	else
+		position1 = controlPointPositions[1]
+		for index = 1, #controlPointPositions - 1 do
+			position2 = controlPointPositions[index + 1]
+			table.insert(newControlPointPositions, position1:Lerp(position2, alpha))
+			position1 = position2
+		end
+		result = BezierCurve._evaluateDeCasteljau(alpha, newControlPointPositions)
+	end
+	assert(result, "[BezierCurve]: deCasteljau failed to compute!")
+	return result
+end
+
+
 ----- Alpha functions -----
 
 function BezierCurve.getAlphaRange(self: ClassType): NumberRange
@@ -46,41 +76,43 @@ end
 
 ----- Position functions -----
 
---[[
-Gets the position at the given alpha using De Casteljau's algorithm.
-https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
-]]
-function BezierCurve._getPositionAtAlpha_deCasteljau(self: ClassType, alpha: number, firstId: number, lastId: number): Vector3
-	local lerp1
-	local lerp2
-	local result
-
-	if not (firstId and lastId) then
-		warn("[BezierCurve]: _getPositionAtAlpha_deCasteljau should have `firstId` and `lastId` provided!")
-	end
-
-	if firstId > lastId then
-		warn(`[BezierCurve]: _getPositionAtAlpha_deCasteljau has invalid range ({firstId}, {lastId})!`)
-	elseif firstId == lastId then
-		result = self:getControlPointPositionByIndex(firstId)
-	else
-		lerp1 = self:_getPositionAtAlpha_deCasteljau(alpha, firstId, lastId - 1)
-		lerp2 = self:_getPositionAtAlpha_deCasteljau(alpha, firstId + 1, lastId)
-		if lerp1 and lerp2 then
-			result = lerp1:Lerp(lerp2, alpha)
-		end
-	end
-	assert(result, "[BezierCurve]: _getPositionAtAlpha_deCasteljau failed to compute!")
-	return result
-end
-
 function BezierCurve.getPositionAtAlpha(self: ClassType, alpha: number, willClampAlpha: boolean?): Vector3
 	local result
 	if willClampAlpha then
 		alpha = self:clampAlpha(alpha)
 	end
-	result = self:_getPositionAtAlpha_deCasteljau(alpha, 1, self:getControlPointCount())
+	result = BezierCurve._evaluateDeCasteljau(alpha, self:getControlPointPositions())
 	return result
+end
+
+
+----- Antiderivative functions -----
+
+--[[
+Gets the antiderivative bezier curve.
+]]
+function BezierCurve.getAntiderivativeCurve(self: ClassType, startAntiderivative: Vector3): ClassType
+	local originalDegree
+	local newBezierCurve
+	local originalPosition
+	local previousControlPointPosition
+	local newControlPointPosition
+
+	originalDegree = self:getControlPointCount() - 1
+	newBezierCurve = BezierCurve.new()
+	newBezierCurve:addControlPoint_data(startAntiderivative)
+	previousControlPointPosition = startAntiderivative
+	for id = 1, originalDegree + 1 do
+		originalPosition = self:getControlPointPositionByIndex(id)
+		-- From derivative: derivPosition = degree * (position2 - position1)
+		-- Its equivalence: origPosition = (degree + 1) * (newAntiderivPosition - prevAntiderivPosition)
+		-- Solved position: newAntiderivPosition = origPosition / (degree + 1) + prevAntiderivPosition
+		newControlPointPosition = originalPosition / (originalDegree + 1) + previousControlPointPosition
+		newBezierCurve:addControlPoint_data(newControlPointPosition)
+		previousControlPointPosition = newControlPointPosition
+	end
+
+	return newBezierCurve
 end
 
 
@@ -98,17 +130,16 @@ function BezierCurve.getFirstDerivativeCurve(self: ClassType): ClassType
 	local newControlPointPosition
 
 	degree = self:getControlPointCount() - 1
-	if degree == 0 then
-		warn("[BezierCurve]: getFirstDerivativeCurve is called on a zero degree bezier curve!")
-	end
 
 	newBezierCurve = BezierCurve.new()
-	position1 = self:getControlPointPositionByIndex(1)
-	for id = 1, degree do
-		position2 = self:getControlPointPositionByIndex(id + 1)
-		newControlPointPosition = degree * (position2 - position1)
-		newBezierCurve:addControlPoint_data(newControlPointPosition)
-		position1 = position2
+	if degree > 0 then
+		position1 = self:getControlPointPositionByIndex(1)
+		for id = 1, degree do
+			position2 = self:getControlPointPositionByIndex(id + 1)
+			newControlPointPosition = degree * (position2 - position1)
+			newBezierCurve:addControlPoint_data(newControlPointPosition)
+			position1 = position2
+		end
 	end
 
 	return newBezierCurve
@@ -120,21 +151,24 @@ Formula: https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/Bezier/bezier-
 ]]
 function BezierCurve._getFirstDerivativeAtAlpha_deCasteljau(self: ClassType, alpha: number): Vector3
 	local degree
+	local controlPointCount
 	local position1
 	local position2
 	local result
 
 	degree = self:getControlPointCount() - 1
-	if degree == 0 then
-		warn("[BezierCurve]: _getFirstDerivativeAtAlpha_deCasteljau is called on a zero degree bezier curve!")
+	if degree <= 0 then
+		result = Vector3.zero
+	else
+		controlPointCount = self:getControlPointCount()
+		position1 = BezierCurve._evaluateDeCasteljau(alpha, self:getControlPointPositions(1, controlPointCount - 1))
+		position2 = BezierCurve._evaluateDeCasteljau(alpha, self:getControlPointPositions(2, controlPointCount))
+		if position1 and position2 then
+			result = degree * (position2 - position1)
+		end
 	end
 
-	position1 = self:_getPositionAtAlpha_deCasteljau(alpha, 1, degree)
-	position2 = self:_getPositionAtAlpha_deCasteljau(alpha, 2, degree + 1)
-	if position1 and position2 then
-		result = degree * (position2 - position1)
-	end
-	assert(result, "[BezierCurve]: _getFirstDerivativeAtAlpha_deCasteljau failed to compute!")
+	assert(result, "[BezierCurve]: getFirstDerivativeCurve failed to compute!")
 	return result
 end
 
@@ -162,7 +196,13 @@ function BezierCurve.getHigherOrderDerivativeCurve(self: ClassType, kthDerivativ
 end
 
 function BezierCurve.getHigherOrderDerivativeAtAlpha(self: ClassType, kthDerivative: number, alpha: number, willClampAlpha: boolean?): Vector3
-	return self:getHigherOrderDerivativeCurve(kthDerivative):getPositionAtAlpha(alpha, willClampAlpha)
+	local result
+	if kthDerivative == 0 then
+		result = self:getPositionAtAlpha(alpha, willClampAlpha)
+	else
+		result = self:getHigherOrderDerivativeCurve(kthDerivative - 1):getFirstDerivativeAtAlpha(alpha, willClampAlpha)
+	end
+	return result
 end
 
 

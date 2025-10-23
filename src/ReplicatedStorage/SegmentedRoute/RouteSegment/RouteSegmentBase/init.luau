@@ -29,7 +29,7 @@ export type ClassType = ClassData & typeof(RouteSegmentBase)
 
 --[[
 Constructs a new <code>RouteSegmentBase</code> object.
-This method should only be used for inheritance.
+This method should only be used for creating inherited class.
 ]]
 function RouteSegmentBase.new(): ClassType
 	local self = setmetatable({} :: any, RouteSegmentBase) :: ClassType
@@ -91,6 +91,26 @@ function RouteSegmentBase.getControlPointPositionByIndex(self: ClassType, contro
 end
 
 --[[
+Gets the positions of the specified range of control points.
+]]
+function RouteSegmentBase.getControlPointPositions(self: ClassType, firstIndex: number?, lastIndex: number?): {Vector3}
+	local result = {}
+	local controlPointCount = self:getControlPointCount()
+	local sanitizedFirstId
+	local sanitizedLastId
+
+	sanitizedFirstId = firstIndex or 1
+	sanitizedFirstId = math.max(sanitizedFirstId, 1)
+	sanitizedLastId = lastIndex or controlPointCount
+	sanitizedLastId = math.min(sanitizedLastId, controlPointCount)
+
+	for index = sanitizedFirstId, sanitizedLastId do
+		table.insert(result, self.controlPoints[index]:getPosition())
+	end
+	return result
+end
+
+--[[
 Gets the number of control points.
 ]]
 function RouteSegmentBase.getControlPointCount(self: ClassType): number
@@ -111,7 +131,7 @@ end
 Gets the alpha range (as <code>NumberRange</code>) of the segment.
 ]]
 function RouteSegmentBase.getAlphaRange(self: ClassType): NumberRange
-	warn("[RouteSegmentBase]: Abstract unimplemented function!")
+	warn("[RouteSegmentBase]: Abstract unimplemented function: getAlphaRange!")
 	return NumberRange.new(0)
 end
 
@@ -147,7 +167,7 @@ end
 Gets the position at the given alpha.
 ]]
 function RouteSegmentBase.getPositionAtAlpha(self: ClassType, alpha: number, willClampAlpha: boolean?): Vector3
-	warn("[RouteSegmentBase]: Abstract unimplemented function!")
+	warn("[RouteSegmentBase]: Abstract unimplemented function: getPositionAtAlpha!")
 	return Vector3.zero
 end
 
@@ -158,7 +178,7 @@ end
 Gets the value of the first derivative at the given alpha.
 ]]
 function RouteSegmentBase.getFirstDerivativeAtAlpha(self: ClassType, alpha: number, willClampAlpha: boolean?): Vector3
-	warn("[RouteSegmentBase]: Abstract unimplemented function!")
+	warn("[RouteSegmentBase]: Abstract unimplemented function: getFirstDerivativeAtAlpha!")
 	return Vector3.zero
 end
 
@@ -167,7 +187,9 @@ Gets the positively oriented unit tangent vector at the given alpha.
 ]]
 function RouteSegmentBase.getPositiveDirectionAtAlpha(self: ClassType, alpha: number, willClampAlpha: boolean?): Vector3
 	local firstDerivative = self:getFirstDerivativeAtAlpha(alpha, willClampAlpha)
-	firstDerivative = firstDerivative and firstDerivative.Unit
+	if firstDerivative ~= Vector3.zero then
+		firstDerivative = firstDerivative and firstDerivative.Unit
+	end
 	return firstDerivative
 end
 
@@ -178,7 +200,7 @@ end
 Gets the value of the kth derivative at the given alpha.
 ]]
 function RouteSegmentBase.getHigherOrderDerivativeAtAlpha(self: ClassType, kthDerivative: number, alpha: number, willClampAlpha: boolean?): Vector3
-	warn("[RouteSegmentBase]: Abstract unimplemented function!")
+	warn("[RouteSegmentBase]: Abstract unimplemented function: getHigherOrderDerivativeAtAlpha!")
 	return Vector3.zero
 end
 

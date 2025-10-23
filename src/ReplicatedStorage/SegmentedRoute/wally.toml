@@ -3,7 +3,7 @@ name = "mariochao/segmented-route"
 description = """Create segments (linear / Bezier curves) and connect them into paths (routes / splines).
 The package includes four parts: ControlPoint, RouteSegment, LinkedRoute, and RouteUtil."""
 
-version = "0.0.1"
+version = "0.1.0"
 license = "MIT"
 authors = ["Mario Chao"]
 realm = "shared"
