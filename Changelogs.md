@@ -1,5 +1,15 @@
 # Changelogs
 
+## [v0.1.1] Visualizer params update + nan routes fix | 2025/10/29
+
+Renamed `autoResizePartLength` into `autoResizeLength`.
+
+New table parameter `PartVisualizerParams`:
+- `autoResizeLength` for creating connected parts forming the route.
+- `createSpheres` for creating spheres at the end of each connected part (inspired by the [AAZier](https://create.roblox.com/store/asset/137823212535882/AAZier-Advanced-Bezier-Ropes) plugin).
+
+Fixed several `nan` bugs occured from extreme segments.
+
 ## [v0.1.0] Bezier connection curve + fixed De Casteljau + Visualizer info | 2025/10/23
 
 Added new base class `DynamicSegment`:

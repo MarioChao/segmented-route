@@ -74,27 +74,38 @@ local travelAlongLinkedRoute
 local visualizeDynamicRoute
 
 travelAlongLinkedRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, defaultPart: BasePart, speed: number)
-    local routeStartTime = time()
-    local routeElapsedTime
-    local traversedDistance
-    local routeAlpha
+    local newDefaultPart
+    local routePreviousTime = time()
+    local routeNewTime
+    local routeDeltaTime
+    local deltaDistance
     local daTable = RouteUtil.Reparam.getRoute_distanceAlphaTable(linkedRoute)
     local reparameterization_function
-    local routeLength
+    local routeAlpha
+    local originalRouteDistance
+    local targetRouteDistance
+    local routeTotalLength
     local targetCFrame
-    local newDefaultPart = defaultPart:Clone()
+    newDefaultPart = defaultPart:Clone()
     newDefaultPart.Parent = workspace
     table.sort(daTable, function(a, b) return a.distance < b.distance end)
     print(daTable)
+    routeAlpha = 0
     while true do
         -- Reparameterize
         reparameterization_function = RouteUtil.Reparam.getRoute_reparameterization_function(linkedRoute)
-        routeLength = reparameterization_function(linkedRoute:getAlphaRange().Max, false)
-        -- Get route alpha at time
-        routeElapsedTime = time() - routeStartTime
-        traversedDistance = routeElapsedTime * speed
-        traversedDistance %= routeLength
-        routeAlpha = reparameterization_function(traversedDistance, true)
+        -- Get original route distance at alpha
+        originalRouteDistance = reparameterization_function(routeAlpha, false, true)
+        -- Get delta time & delta distance
+        routeNewTime = time()
+        routeDeltaTime = routeNewTime - routePreviousTime
+        routePreviousTime = routeNewTime
+        deltaDistance = routeDeltaTime * speed
+        -- Get target route distance
+        routeTotalLength = reparameterization_function(linkedRoute:getAlphaRange().Max, false)
+        targetRouteDistance = (originalRouteDistance + deltaDistance) % routeTotalLength
+        -- Convert to new alpha
+        routeAlpha = reparameterization_function(targetRouteDistance, true)
         -- Set part CFrame
         targetCFrame = linkedRoute:getCFrameAtAlpha(routeAlpha)
         newDefaultPart.CFrame = targetCFrame
@@ -102,7 +113,7 @@ travelAlongLinkedRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, defau
     end
 end
 
-visualizeDynamicRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, useAlpha: boolean, visualizerInfo, autoResizePartLength: boolean, partCountLimit: number, minDeltaParameter: number)
+visualizeDynamicRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, useAlpha: boolean, visualizerInfo, connected: boolean, partCountLimit: number, minDeltaParameter: number)
     local reparameterization_function
     local partsFolder: Folder
     local oldPartsFolder: Folder
@@ -118,7 +129,11 @@ visualizeDynamicRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, useAlp
             alphaRange = linkedRoute:getAlphaRange()
             partCountDeltaParameter = (alphaRange.Max - alphaRange.Min) / partCountLimit
             deltaParameter = math.max(minDeltaParameter, partCountDeltaParameter)
-            partsFolder, partsTable = RouteUtil.Visualizer.createParts_equalSteps(linkedRoute, visualizerInfo, autoResizePartLength, alphaRange.Min, deltaParameter)
+            if connected then
+                partsFolder, partsTable = RouteUtil.Visualizer.createParts_connected_equalSteps(linkedRoute, visualizerInfo, alphaRange.Min, deltaParameter)
+            else
+                partsFolder, partsTable = RouteUtil.Visualizer.createParts_equalSteps(linkedRoute, visualizerInfo, nil, alphaRange.Min, deltaParameter)
+            end
         else
             -- Use distance
             reparameterization_function = RouteUtil.Reparam.getRoute_reparameterization_function(linkedRoute)
@@ -126,11 +141,16 @@ visualizeDynamicRoute = function(linkedRoute: SegmentedRoute.LinkedRoute, useAlp
             partCountDeltaParameter = routeLength / partCountLimit
             deltaParameter = math.max(minDeltaParameter, partCountDeltaParameter)
             if visualizerInfo and visualizerInfo.templatePart then
-                visualizerInfo.templatePart.Size = Vector3.new(0.2, 0.2, deltaParameter * 0.4)
+                visualizerInfo.templatePart.Size = Vector3.new(deltaParameter * 0.4, visualizerInfo.templatePart.Size.Y, visualizerInfo.templatePart.Size.Z)
             end
-            reparameterization_function, partsFolder, partsTable = RouteUtil.createParts_equalDistanceSteps(linkedRoute, visualizerInfo, autoResizePartLength, deltaParameter)
+            if connected then
+                reparameterization_function, partsFolder, partsTable = RouteUtil.createParts_connected_equalDistanceSteps(linkedRoute, visualizerInfo, deltaParameter)
+            else
+                reparameterization_function, partsFolder, partsTable = RouteUtil.createParts_equalDistanceSteps(linkedRoute, visualizerInfo, nil, deltaParameter)
+            end
         end
         RunService.Heartbeat:Wait()
+        -- Clear old parts
         if not oldPartsTable or #oldPartsTable ~= #partsTable then
             print(#partsTable)
         end
@@ -220,7 +240,7 @@ testBezierCurve = function()
 
     testBezierCurveDerivatives(bezierCurve)
 
-    partsFolder = RouteUtil.Visualizer.createParts_equalSteps(LinkedRoute.fromSegments({bezierCurve}), nil, true, 0, 0.05)
+    partsFolder = RouteUtil.Visualizer.createParts_equalSteps(LinkedRoute.fromSegments({bezierCurve}), nil, {}, 0, 0.05)
     task.wait(2)
     partsFolder:Destroy()
     task.wait(1)
@@ -246,7 +266,7 @@ testBezierConnectionCurve = function()
     -- bezierConnectionCurve:getPositionAtAlpha(0)
     -- RouteUtil.Visualizer.createParts_equalSteps(LinkedRoute.fromSegments({curve1, bezierConnectionCurve, curve2}), nil, false, 0, 0.05)
     -- RouteUtil.createParts_equalDistanceSteps(LinkedRoute.fromSegments({curve1, bezierConnectionCurve, curve2}), nil, false, 1)
-    visualizeDynamicRoute(LinkedRoute.fromSegments({curve1, bezierConnectionCurve, curve2}), false, nil, false, 1000, 1)
+    visualizeDynamicRoute(LinkedRoute.fromSegments({curve1, bezierConnectionCurve, curve2}), false, nil, true, 1000, 1)
     task.wait(2)
 end
 
@@ -275,8 +295,9 @@ testLinkedRoute = function(linkedRoute: SegmentedRoute.LinkedRoute)
     visualizerPart = Instance.new("Part")
     visualizerPart.Material = Enum.Material.Neon
     visualizerPart.Locked = true
-    visualizerPart.Size = Vector3.new(0.2, 0.2, 0.5)
+    visualizerPart.Size = Vector3.new(0.5, 0.2, 0.2)
     visualizerPart.Anchored = true
+    visualizerPart.Shape = Enum.PartType.Cylinder
 
     visualizerInfo = {
         colorRange = colorRange1,
@@ -289,8 +310,8 @@ testLinkedRoute = function(linkedRoute: SegmentedRoute.LinkedRoute)
         colorRange = colorRange2,
         templatePart = visualizerPart :: BasePart,
     }
-    RouteUtil.createParts_equalDistanceSteps(linkedRoute, visualizerInfo, true, 1)
-    -- task.defer(visualizeDynamicRoute, linkedRoute, false, visualizerInfo, true, 2000, 1)
+    -- RouteUtil.createParts_equalDistanceSteps(linkedRoute, visualizerInfo, true, 1)
+    task.defer(visualizeDynamicRoute, linkedRoute, false, visualizerInfo, true, 2000, 1)
 end
 
 

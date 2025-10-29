@@ -12,7 +12,7 @@ Segmented Route is a package of 4 parts:
 
 Some of the things you can do with SegmentedRoute!
 
-| Equal alpha | Reparameterized by distance | With `autoResizePartLength` |
+| Equal alpha | Reparameterized by distance | With `autoResizeLength` |
 |:---:|:---:|:---:|
 | ![Bezier curve route with dots at equal alpha](assets/images/visual-delta-alpha.png) | ![With dots at equal distance](assets/images/visual-reparameterized.png) | ![Parts connected at the dots in the previous image](assets/images/visual-connected-dots.png) |
 

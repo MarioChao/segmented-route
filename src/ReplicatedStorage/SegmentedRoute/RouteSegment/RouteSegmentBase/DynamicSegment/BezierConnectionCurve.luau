@@ -61,6 +61,8 @@ function BezierConnectionCurve.updateControlPoints(self: ClassType)
     local segment2AlphaMin
     local temporaryBezierCurve
     local k = self.continuity
+    local isValidCurve
+    local temporaryPositionTable
 
     segment1AlphaMax = self._segment1:getAlphaRange().Max
     segment2AlphaMin = self._segment2:getAlphaRange().Min
@@ -119,10 +121,24 @@ function BezierConnectionCurve.updateControlPoints(self: ClassType)
         end
     end
 
+    -- Check control points validity
+    isValidCurve = true
+    for _, temporaryPosition in temporaryBezierCurve:getControlPointPositions() do
+        temporaryPositionTable = {temporaryPosition.X, temporaryPosition.Y, temporaryPosition.Z}
+        for _, value in temporaryPositionTable do
+            if math.abs(value) == math.huge then
+                isValidCurve = false
+            elseif value ~= value then
+                isValidCurve = false
+            end
+        end
+    end
 
-    -- Update segment states
-    self.controlPoints = temporaryBezierCurve.controlPoints
-    self._bezierCurve = temporaryBezierCurve
+    -- Update segment states if control points are valid
+    if isValidCurve then
+        self.controlPoints = temporaryBezierCurve.controlPoints
+        self._bezierCurve = temporaryBezierCurve
+    end
 end
 
 

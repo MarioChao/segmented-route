@@ -102,7 +102,18 @@ getRoute_distanceAlphaTable_recursion = function(resultTable: {DistanceAlphaPair
     local deltaStud = (stopPosition - startPosition).Magnitude
     local deltaAlpha = stopAlpha - startAlpha
     local midAlpha
-    if isSegmentSmallEnough(deltaStud, deltaAlpha, recursionEndSettings) then
+    local isValidDeltaStud
+
+    -- Validate delta stud
+    isValidDeltaStud = true
+    isValidDeltaStud = isValidDeltaStud and deltaStud == deltaStud
+    isValidDeltaStud = isValidDeltaStud and math.abs(deltaStud) ~= math.huge
+    if not isValidDeltaStud then
+        deltaStud = 1
+    end
+
+    -- Recursive subdivision
+    if isSegmentSmallEnough(deltaStud, deltaAlpha, recursionEndSettings) or deltaStud ~= deltaStud then
         currentDistance += deltaStud
         table.insert(resultTable, {
             distance = currentDistance,
@@ -118,10 +129,12 @@ end
 
 isDistanceAlphaPairLessThanParameter = function(distanceAlphaPair: DistanceAlphaPair, parameter: number, inputIsDistance: boolean)
     local result
-    if inputIsDistance then
-        result = distanceAlphaPair.distance < parameter
-    else
-        result = distanceAlphaPair.alpha < parameter
+    if parameter == parameter then
+        if inputIsDistance then
+            result = distanceAlphaPair.distance < parameter
+        else
+            result = distanceAlphaPair.alpha < parameter
+        end
     end
     return result
 end
@@ -213,6 +226,10 @@ function RouteReparam.getRoute_reparameterization_function(linkedRoute: LinkedRo
             result = math.map(parameter, daTable[indexL].distance, daTable[indexR].distance, daTable[indexL].alpha, daTable[indexR].alpha)
         else
             result = math.map(parameter, daTable[indexL].alpha, daTable[indexR].alpha, daTable[indexL].distance, daTable[indexR].distance)
+        end
+        if result ~= result then
+            -- Debug purposes
+            warn(`[RouteReparam]: reparameterization_function resulted in nan!`)
         end
         return result
     end

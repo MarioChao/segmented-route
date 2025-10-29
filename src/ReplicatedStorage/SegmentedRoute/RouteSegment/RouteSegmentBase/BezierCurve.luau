@@ -61,6 +61,10 @@ function BezierCurve._evaluateDeCasteljau(alpha: number, controlPointPositions: 
 		end
 		result = BezierCurve._evaluateDeCasteljau(alpha, newControlPointPositions)
 	end
+	if result ~= result then
+		-- Debug purposes
+		warn(`[BezierCurve]: deCasteljau resulted in nan!`)
+	end
 	assert(result, "[BezierCurve]: deCasteljau failed to compute!")
 	return result
 end
